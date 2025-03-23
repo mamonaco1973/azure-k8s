@@ -22,13 +22,13 @@ data "azurerm_container_registry" "flask_acr" {
 }
 
 
-data "azurerm_virtual_network" "acr_vnet" {
-  name                = "acr-vnet"
+data "azurerm_virtual_network" "aks_vnet" {
+  name                = "aks-vnet"
   resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name
 }
 
-data "azurerm_subnet" "acr_subnet" {
-  name                 = "acr-subnet"
-  virtual_network_name = data.azurerm_virtual_network.acr_vnet.name
+data "azurerm_subnet" "aks_subnet" {
+  name                 = "aks-subnet"
+  virtual_network_name = data.azurerm_virtual_network.aks_vnet.name
   resource_group_name  = data.azurerm_resource_group.aks_flaskapp_rg.name
 }

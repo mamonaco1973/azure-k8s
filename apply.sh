@@ -39,7 +39,7 @@ echo "NOTE: Building AKS instance."
 if [ ! -d ".terraform" ]; then
     terraform init
 fi
-terraform apply -auto-approve
+terraform apply -var="acr_name=$ACR_NAME" -auto-approve
 
 # Return to the parent directory
 cd ..

@@ -2,10 +2,13 @@ cd "03-aks"
 
 echo "NOTE: Destroying EKS cluster."
 
+RESOURCE_GROUP="aks-flaskapp-rg"
+ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[?starts_with(name, 'flaskapp')].name | [0]" --output tsv)
+
 if [ ! -d ".terraform" ]; then
     terraform init
 fi
-terraform destroy -auto-approve
+terraform destroy -var="acr_name=$ACR_NAME" --auto-approve
 rm -f -r .terraform terraform*
 cd ..
 
