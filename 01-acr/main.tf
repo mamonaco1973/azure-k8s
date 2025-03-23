@@ -11,7 +11,7 @@ data "azurerm_subscription" "primary" {}
 data "azurerm_client_config" "current" {}
 
 # Define a resource group for all resources in this project
-resource "azurerm_resource_group" "flask_container_rg" {
+resource "azurerm_resource_group" "aks_flaskapp_rg" {
   name     = var.resource_group_name  # Name of the resource group
   location = "Central US"             # Region where resources will be deployed
 }

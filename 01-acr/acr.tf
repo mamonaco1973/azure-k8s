@@ -4,10 +4,10 @@ resource "azurerm_container_registry" "flask_acr" {
   name = "flaskapp${substr(data.azurerm_client_config.current.subscription_id, 0, 6)}"
 
   # The Resource Group where the ACR is deployed.
-  resource_group_name = azurerm_resource_group.flask_container_rg.name
+  resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name
 
   # The region where the ACR is hosted, matching the Resource Group's location.
-  location = azurerm_resource_group.flask_container_rg.location
+  location = azurerm_resource_group.aks_flaskapp_rg.location
 
   # ACR pricing tier options:
   # - "Basic": Cost-effective, limited features.
