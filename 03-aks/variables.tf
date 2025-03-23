@@ -10,3 +10,7 @@ variable "image_version" {
   default     = "rc1"
 }
 
+variable "acr_name"  {
+   description = "Name of the ACR repository"
+   type        = string
+}
