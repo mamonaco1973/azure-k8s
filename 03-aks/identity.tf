@@ -20,7 +20,7 @@ resource "azurerm_user_assigned_identity" "k8s_identity" {
 resource "azurerm_role_assignment" "k8s_acr_role" {
   scope                = data.azurerm_container_registry.flask_acr.id             # Scope is the Azure Container Registry
   role_definition_name = "acrpull"                                                # Role that allows pulling container images
-  principal_id         = azurerm_user_assigned_identity.k8sidentity.principal_id  # Assigning the role to the managed identity
+  principal_id         = azurerm_user_assigned_identity.k8s_identity.principal_id # Assigning the role to the managed identity
 }
 
 # -----------------------------------------------
@@ -28,7 +28,7 @@ resource "azurerm_role_assignment" "k8s_acr_role" {
 # -----------------------------------------------
 
 resource "azurerm_cosmosdb_sql_role_assignment" "k8s_cosmosdb_role" {
-  principal_id        = azurerm_user_assigned_identity.k8sidentity.principal_id    # Assigning the role to the container app's identity
+  principal_id        = azurerm_user_assigned_identity.k8s_identity.principal_id   # Assigning the role to the container app's identity
   role_definition_id  = azurerm_cosmosdb_sql_role_definition.custom_cosmos_role.id # Using a custom CosmosDB role definition
   scope               = azurerm_cosmosdb_account.candidate_account.id              # Applying the role at the CosmosDB account level
   account_name        = azurerm_cosmosdb_account.candidate_account.name            # Target CosmosDB account
