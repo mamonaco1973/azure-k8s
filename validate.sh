@@ -1,5 +1,7 @@
 #!/bin/bash
 
+exit 0
+
 CONTAINER_APP="flask-container-app"
 RESOURCE_GROUP="flask-container-rg"
 
