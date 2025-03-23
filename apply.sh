@@ -23,7 +23,7 @@ cd ..
 cd "02-docker"
 echo "NOTE: Building flask container with Docker."
 
-RESOURCE_GROUP="flask-container-rg"
+RESOURCE_GROUP="aks-flaskapp-rg"
 ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[?starts_with(name, 'flaskapp')].name | [0]" --output tsv)
 az acr login --name $ACR_NAME
 ACR_REPOSITORY="${ACR_NAME}.azurecr.io/flask-app"
@@ -33,8 +33,8 @@ docker build -t ${ACR_REPOSITORY}:${IMAGE_TAG} . --push
 cd ..
 
 # Navigate to the 03-apprunner directory
-cd 03-containerapp
-echo "NOTE: Building container app instance."
+cd 03-aks
+echo "NOTE: Building AKS instance."
 
 if [ ! -d ".terraform" ]; then
     terraform init

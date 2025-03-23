@@ -1,6 +1,6 @@
-cd "03-containerapp"
+cd "03-aks"
 
-echo "NOTE: Destroying container app instance."
+echo "NOTE: Destroying EKS cluster."
 
 if [ ! -d ".terraform" ]; then
     terraform init
