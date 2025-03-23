@@ -1,7 +1,13 @@
+resource "random_string" "acr_suffix" {
+  length  = 8
+  special = false
+  upper   = false
+}
+
 # Creates an Azure Container Registry (ACR) for storing Docker container images.
 resource "azurerm_container_registry" "flask_acr" {
   # Globally unique ACR name, using a subscription ID prefix to avoid conflicts.
-  name = "flaskapp${substr(data.azurerm_client_config.current.subscription_id, 0, 6)}"
+  name = "flaskapp${random_string.acr_suffix.result}"   
 
   # The Resource Group where the ACR is deployed.
   resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name

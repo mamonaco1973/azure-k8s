@@ -7,8 +7,8 @@ resource "random_string" "cosmosdb_suffix" {
 # Cosmos DB Account Configuration
 resource "azurerm_cosmosdb_account" "candidate_account" {
   name                = "candidates-${random_string.cosmosdb_suffix.result}"    # Unique cosmosdb name
-  location            = data.azurerm_resource_group.flask_container_rg.location # Azure region
-  resource_group_name = data.azurerm_resource_group.flask_container_rg.name     # Resource group for the Cosmos DB account
+  location            = data.azurerm_resource_group.aks_flaskapp_rg.location # Azure region
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name     # Resource group for the Cosmos DB account
   offer_type          = "Standard"                                              # Pricing tier for the Cosmos DB account
   kind                = "GlobalDocumentDB"                                      # Cosmos DB account type
 
@@ -19,7 +19,7 @@ resource "azurerm_cosmosdb_account" "candidate_account" {
 
   # Configure geo-replication for high availability
   geo_location {
-    location          = data.azurerm_resource_group.flask_container_rg.location # Primary region
+    location          = data.azurerm_resource_group.aks_flaskapp_rg.location # Primary region
     failover_priority = 0                                                       # Highest priority for this region
   }
 
@@ -32,14 +32,14 @@ resource "azurerm_cosmosdb_account" "candidate_account" {
 # Cosmos DB SQL Database
 resource "azurerm_cosmosdb_sql_database" "candidate_database" {
   name                = "CandidateDatabase"                                 # Name of the SQL database
-  resource_group_name = data.azurerm_resource_group.flask_container_rg.name # Resource group for the database
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name    # Resource group for the database
   account_name        = azurerm_cosmosdb_account.candidate_account.name     # Parent Cosmos DB account name
 }
 
 # Cosmos DB SQL Container Configuration
 resource "azurerm_cosmosdb_sql_container" "candidate_container" {
   name                = "Candidates"                                          # Name of the table
-  resource_group_name = data.azurerm_resource_group.flask_container_rg.name   # Resource group for the table
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name      # Resource group for the table
   account_name        = azurerm_cosmosdb_account.candidate_account.name       # Parent Cosmos DB account name
   database_name       = azurerm_cosmosdb_sql_database.candidate_database.name # Parent database name
 

@@ -12,7 +12,7 @@ data "azurerm_client_config" "current" {}
 
 # Resource group for the project
 
-data "azurerm_resource_group" "flask_container_rg" {
+data "azurerm_resource_group" "aks_flaskapp_rg" {
   name = var.resource_group_name
 }
 
