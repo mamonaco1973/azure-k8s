@@ -31,6 +31,23 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   tags = {
     environment = "dev"
   }
+}
 
+provider "kubernetes" {
+  host                   = azurerm_kubernetes_cluster.flask_aks.kube_config[0].host
+  client_certificate     = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_certificate)
+  client_key             = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_key)
+  cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].cluster_ca_certificate)
+}
+
+resource "kubernetes_service_account" "cosmosdb_access" {
+  metadata {
+    name      = "cosmosdb-access-sa"
+    namespace = "default"
+
+    annotations = {
+      "azure.workload.identity/client-id" = azurerm_user_assigned_identity.k8s_identity.client_id
+    }
+  }
 }
 
