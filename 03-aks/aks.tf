@@ -1,7 +1,7 @@
 resource "azurerm_kubernetes_cluster" "flask_aks" {
   name                = "flask-aks"
-  location            = data.azurerm_resource_group.location
-  resource_group_name = data.azurerm_resource_group.name
+  location            = data.azurerm_resource_group.aks_flaskapp_rg.location
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name
   dns_prefix          = "flaskkube"
 
   default_node_pool {
