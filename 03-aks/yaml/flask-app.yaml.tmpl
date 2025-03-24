@@ -59,7 +59,7 @@ spec:
       port: 80                       # External port (clients connect here)
       targetPort: 8000               # Forward traffic to container port 8000
 
-  type: NodePort                     # Expose service on a random high port across all cluster nodes
+  type: ClusterIP                    # Expose service on a random high port across all cluster nodes
 
 ---
 # =============================================================
