@@ -21,6 +21,8 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
     load_balancer_sku = "standard"
   }
 
+  oidc_issuer_enabled = true 
+
   identity {
     type         = "UserAssigned"
     identity_ids = [azurerm_user_assigned_identity.k8s_identity.id]
