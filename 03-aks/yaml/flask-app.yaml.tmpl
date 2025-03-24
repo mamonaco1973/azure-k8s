@@ -17,7 +17,7 @@ spec:
     metadata:
       labels:
         app: flask-app                # Label applied to each Pod for selection by Service and HPA
-
+        azure.workload.identity/use: "true"  # ✅ Required for pod mutation
     spec:
       serviceAccountName: cosmosdb-access-sa  # Use a specific service account for access to cosmosdb-sa       
       containers:
