@@ -34,3 +34,14 @@ resource "azurerm_cosmosdb_sql_role_assignment" "k8s_cosmosdb_role" {
   account_name        = azurerm_cosmosdb_account.candidate_account.name            # Target CosmosDB account
   resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name           # Resource group name
 }
+
+
+resource "azurerm_federated_identity_credential" "cosmosdb_sa_binding" {
+  name                = "flaskapp-federated-cred"
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name
+  parent_id           = azurerm_user_assigned_identity.k8s_identity.id
+
+  issuer   = azurerm_kubernetes_cluster.flask_aks.oidc_issuer_url
+  subject  = "system:serviceaccount:default:cosmosdb-access-sa"
+  audience = ["api://AzureADTokenExchange"]
+}
