@@ -18,9 +18,9 @@ resource "azurerm_user_assigned_identity" "k8s_identity" {
 # Grants the container app's managed identity permission to pull images from Azure Container Registry.
 
 resource "azurerm_role_assignment" "k8s_acr_role" {
-  scope                = data.azurerm_container_registry.flask_acr.id             # Scope is the Azure Container Registry
-  role_definition_name = "acrpull"                                                # Role that allows pulling container images
-  principal_id         = azurerm_user_assigned_identity.k8s_identity.principal_id # Assigning the role to the managed identity
+  scope                = data.azurerm_container_registry.flask_acr.id
+  role_definition_name = "acrpull"
+  principal_id         = azurerm_kubernetes_cluster.flask_aks.identity[0].principal_id
 }
 
 # -----------------------------------------------

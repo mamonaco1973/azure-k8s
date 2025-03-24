@@ -24,8 +24,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   oidc_issuer_enabled = true 
 
   identity {
-    type         = "UserAssigned"
-    identity_ids = [azurerm_user_assigned_identity.k8s_identity.id]
+     type = "SystemAssigned" 
   }
 
   tags = {
