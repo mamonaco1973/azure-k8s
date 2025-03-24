@@ -22,7 +22,8 @@ spec:
       serviceAccountName: cosmosdb-access-sa  # Use a specific service account for access to cosmosdb-sa       
       containers:
         - name: flask-app                       # Container name within the Pod
-          image: ${account_id}.dkr.ecr.us-east-2.amazonaws.com/flask-app:flask-app-rc1
+           
+          image:  ${ACR_NAME}.azurecr.io/flask-app:flask-app-rc1 
                                                 # Pull the image from Amazon ECR using a release candidate tag
 
           ports:
@@ -56,9 +57,9 @@ spec:
   ports:
     - protocol: TCP                  # Use TCP protocol for HTTP traffic
       port: 80                       # External port (clients connect here)
-      targetPort: 8000              # Forward traffic to container port 8000
+      targetPort: 8000               # Forward traffic to container port 8000
 
-  type: NodePort                    # Expose service on a random high port across all cluster nodes
+  type: NodePort                     # Expose service on a random high port across all cluster nodes
 
 ---
 # =============================================================
