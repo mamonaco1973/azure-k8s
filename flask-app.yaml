@@ -17,13 +17,13 @@ spec:
     metadata:
       labels:
         app: flask-app                # Label applied to each Pod for selection by Service and HPA
-
+        azure.workload.identity/use: "true"  # ✅ Required for pod mutation
     spec:
       serviceAccountName: cosmosdb-access-sa  # Use a specific service account for access to cosmosdb-sa       
       containers:
         - name: flask-app                       # Container name within the Pod
            
-          image:  flaskapp2blfutl8.azurecr.io/flask-app:flask-app-rc1 
+          image:  flaskappp6gmcbb2.azurecr.io/flask-app:flask-app-rc1 
                                                 # Pull the image from Amazon ECR using a release candidate tag
 
           ports:
@@ -32,7 +32,7 @@ spec:
           env:
 
             - name: COSMOS_ENDPOINT
-              value: "https://candidates-r2d8iv1w.documents.azure.com:443/"
+              value: "https://candidates-jiqh0ka4.documents.azure.com:443/"
 
             - name: COSMOS_DATABASE_NAME
               value: "CandidateDatabase"
@@ -40,13 +40,13 @@ spec:
             - name: COSMOS_CONTAINER_NAME
               value: "Candidates"
 
-          livenessProbe:
-            httpGet:
-              path: /gtg                        # Health check endpoint (same as ALB health check)
-              port: 8000                        # Target port inside container
-            initialDelaySeconds: 5              # Delay before the first check after startup
-            periodSeconds: 10                   # Frequency of health checks
-            failureThreshold: 3                 # Pod is considered unhealthy after 3 consecutive failures
+#          livenessProbe:
+#            httpGet:
+#              path: /gtg                        # Health check endpoint (same as ALB health check)
+#              port: 8000                        # Target port inside container
+#            initialDelaySeconds: 5              # Delay before the first check after startup
+#            periodSeconds: 10                   # Frequency of health checks
+#            failureThreshold: 3                 # Pod is considered unhealthy after 3 consecutive failures
 
 ---
 # =============================================================

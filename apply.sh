@@ -73,6 +73,7 @@ cd ..
 
 # Configure kubectl to point to new AKS cluster
 
+rm -f -r ~/.kube
 az aks get-credentials --resource-group aks-flaskapp-rg --name flask-aks
 
 # Attach ACR repository to AKS instance
@@ -81,13 +82,13 @@ az aks update --name flask-aks --resource-group aks-flaskapp-rg --attach-acr $AC
 
 # Execute the validation script
 
-helm repo add azure-workload-identity https://azure.github.io/azure-workload-identity/charts
-helm repo update
+#helm repo add azure-workload-identity https://azure.github.io/azure-workload-identity/charts
+#helm repo update
 
-helm install workload-identity-webhook azure-workload-identity/workload-identity-webhook \
-  --namespace azure-workload-identity-system \
-  --create-namespace \
-  --set azureTenantID=$ARM_TENANT_ID
+#helm upgrade --install workload-identity-webhook azure-workload-identity/workload-identity-webhook \
+#  --namespace azure-workload-identity-system \
+#  --create-namespace \
+#  --set azureTenantID=$ARM_TENANT_ID
 
 
 #./validate.sh
