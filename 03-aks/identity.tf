@@ -20,7 +20,7 @@ resource "azurerm_user_assigned_identity" "k8s_identity" {
 resource "azurerm_role_assignment" "k8s_acr_role" {
   scope                = data.azurerm_container_registry.flask_acr.id
   role_definition_name = "acrpull"
-  principal_id         = azurerm_kubernetes_cluster.flask_aks.identity[0].principal_id
+  principal_id         = azurerm_user_assigned_identity.k8s_identity.principal_id
 }
 
 # -----------------------------------------------
