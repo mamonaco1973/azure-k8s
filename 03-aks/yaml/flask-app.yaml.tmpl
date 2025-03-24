@@ -30,8 +30,15 @@ spec:
             - containerPort: 8000               # Expose port 8000 (Flask app default)
 
           env:
-            - name: FLASK_ENV
-              value: "production"               # Set the environment variable for production mode
+          
+            - name: COSMOS_ENDPOINT
+              value: "https://candidates-y3cg4sbd.documents.azure.com:443/"
+
+            - name: COSMOS_DATABASE_NAME
+              value: "CandidateDatabase"
+
+            - name: COSMOS_CONTAINER_NAME
+              value: "Candidates"
 
           livenessProbe:
             httpGet:

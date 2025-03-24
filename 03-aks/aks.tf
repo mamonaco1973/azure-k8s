@@ -23,6 +23,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
 
   oidc_issuer_enabled = true 
 
+
   identity {
      type = "SystemAssigned" 
   }
