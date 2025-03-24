@@ -22,6 +22,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   }
 
   oidc_issuer_enabled = true 
+  workload_identity_enabled = true
 
   identity {
      type         = "UserAssigned"
