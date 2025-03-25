@@ -69,26 +69,25 @@ spec:
   type: ClusterIP                    # Expose service on a random high port across all cluster nodes
 
 ---
-# =============================================================
-# Ingress: flask-app-ingress (AKS Ingress via NGINX Controller)
-# =============================================================
 
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# =============================================================
+# Service: flask-app-service (Uses Azure Load Balancer)
+# =============================================================
+apiVersion: v1
+kind: Service
 metadata:
-  name: flask-app-ingress
+  name: flask-app-service
+
 spec:
-  ingressClassName: nginx
-  rules:
-  - http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: flask-app-service
-            port:
-              number: 80
+  selector:
+    app: flask-app
+
+  ports:
+    - protocol: TCP
+      port: 80           # External port exposed via Load Balancer
+      targetPort: 8000   # Internal container port
+
+  type: LoadBalancer     # 👉 This creates a native Azure Load Balancer + public IP
 
 ---
 # =============================================================
