@@ -44,9 +44,10 @@ spec:
             httpGet:
               path: /gtg                        # Health check endpoint (same as ALB health check)
               port: 8000                        # Target port inside container
-            initialDelaySeconds: 5              # Delay before the first check after startup
-            periodSeconds: 10                   # Frequency of health checks
-            failureThreshold: 3                 # Pod is considered unhealthy after 3 consecutive failures
+            initialDelaySeconds: 60             # Delay before the first check after startup
+            periodSeconds: 30                   # Frequency of health checks
+            failureThreshold: 6                 # Pod is considered unhealthy after 6 consecutive failures
+            timeoutSeconds: 10
 
 ---
 # =============================================================
