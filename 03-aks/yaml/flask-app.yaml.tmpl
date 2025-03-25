@@ -72,33 +72,23 @@ spec:
 # =============================================================
 # Ingress: flask-app-ingress (AKS Ingress via NGINX Controller)
 # =============================================================
+
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: flask-app-ingress
-
-  annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/configuration-snippet: |
-      rewrite ^(/)$ $1/ redirect;
-
-  labels:
-    app: flask-app
-
 spec:
-  ingressClassName: nginx  # Use the NGINX ingress controller in AKS
-
+  ingressClassName: nginx
   rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: flask-app-service
-                port:
-                  number: 80
+  - http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: flask-app-service
+            port:
+              number: 80
 
 ---
 # =============================================================
