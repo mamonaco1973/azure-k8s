@@ -28,6 +28,19 @@ resource "azurerm_network_security_group" "flask_lb_nsg" {
     source_address_prefix      = "*"                                  # Source address range
     destination_address_prefix = "*"                                  # Destination address range
   }
+
+  security_rule {
+    name                       = "Allow-Flask-Ingress-8000"
+    priority                   = 1003
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "8000"
+    source_address_prefix      = "*"   # Or lock this to Ingress controller IP/CIDR if needed
+    destination_address_prefix = "*"
+  }
+
 }
 
 resource "azurerm_subnet_network_security_group_association" "flask-lb-nsg-assoc" {
