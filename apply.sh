@@ -39,7 +39,11 @@ echo "NOTE: Building AKS instance."
 if [ ! -d ".terraform" ]; then
     terraform init
 fi
-terraform apply -var="acr_name=$ACR_NAME" -auto-approve
+
+terraform apply \
+  -var="azure_client_secret='${ARM_CLIENT_SECRET}'" \
+  -var="acr_name='${ACR_NAME}'" \
+  -auto-approve
 
 # Replace placeholder in the Kubernetes deployment template
 sed "s/\${ACR_NAME}/$ACR_NAME/g" yaml/flask-app.yaml.tmpl > ../flask-app.yaml || {
