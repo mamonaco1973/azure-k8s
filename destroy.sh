@@ -1,6 +1,6 @@
 cd "03-aks"
 
-echo "NOTE: Destroying EKS cluster."
+echo "NOTE: Destroying AKS cluster."
 
 RESOURCE_GROUP="aks-flaskapp-rg"
 ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[?starts_with(name, 'flaskapp')].name | [0]" --output tsv)
