@@ -1,4 +1,5 @@
 # Configure the AzureRM provider
+
 provider "azurerm" {
   # Enables the default features of the provider
   features {}

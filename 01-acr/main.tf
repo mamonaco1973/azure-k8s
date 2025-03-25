@@ -15,3 +15,4 @@ resource "azurerm_resource_group" "aks_flaskapp_rg" {
   name     = var.resource_group_name  # Name of the resource group
   location = "Central US"             # Region where resources will be deployed
 }
+

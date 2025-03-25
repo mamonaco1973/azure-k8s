@@ -6,8 +6,10 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
 
   default_node_pool {
     name       = "default"
-    node_count = 1
-    vm_size    = "Standard_B2s"
+    min_count  = 1
+    max_count  = 5
+    vm_size    = "Standard_D2s_v3"
+    auto_scaling_enabled = true
 
     upgrade_settings {
       drain_timeout_in_minutes = 0
