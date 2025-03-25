@@ -80,24 +80,21 @@ az aks get-credentials --resource-group aks-flaskapp-rg --name flask-aks
 
 az aks update --name flask-aks --resource-group aks-flaskapp-rg --attach-acr $ACR_NAME  > /dev/null
 
-# Execute the validation script
+# Add nginx support to K8S cluster via helml
 
-#helm repo add azure-workload-identity https://azure.github.io/azure-workload-identity/charts
+#helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 #helm repo update
 
-#helm upgrade --install workload-identity-webhook azure-workload-identity/workload-identity-webhook \
-#  --namespace azure-workload-identity-system \
-#  --create-namespace \
-#  --set azureTenantID=$ARM_TENANT_ID
+#helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+#  --namespace ingress-nginx \
+#  --create-namespace
 
-helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-helm repo update
+# Deploy the flask application yaml
 
-helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-  --namespace ingress-nginx \
-  --create-namespace
+kubectl apply -f flask-app.yaml
 
+# Validate the Solution
 
-#./validate.sh
+./validate.sh
 
 

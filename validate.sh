@@ -1,39 +1,36 @@
 #!/bin/bash
 
-exit 0
 
-CONTAINER_APP="flask-container-app"
-RESOURCE_GROUP="flask-container-rg"
+# Parse the service object to get the service IP address
 
-# Get the service URL
-SERVICE_URL=$(az containerapp show --name "$CONTAINER_APP" --resource-group "$RESOURCE_GROUP" --query "properties.configuration.ingress.fqdn" --output tsv)
+SERVICE_IP=$(kubectl get service flask-app-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 
-# Check if the SERVICE_URL is empty
-if [[ -z "$SERVICE_URL" || "$SERVICE_URL" == "None" ]]; then
-  echo "ERROR: Service URL for $CONTAINER_APP is not found. Please check if the service exists and try again."
+
+# Check if the IP was successfully extracted
+if [ -z "$SERVICE_IP" ]; then
+  echo "ERROR: Failed to retrieve the service IP address."
   exit 1
 fi
 
-# Wait for ingress to be ready
-echo "NOTE: Waiting for the API to be reachable..."
+echo "NOTE: Ingress Load Balancer IP: $SERVICE_IP"
 
 while true; do
-    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://$SERVICE_URL/candidate/John%20Smith")
+    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "http://$SERVICE_IP/candidate/John%20Smith")
 
     if [[ "$HTTP_STATUS" == "200" ]]; then
         echo "NOTE: API is now reachable."
         break
     else
-        echo "WARNING: API is not yet reachable (HTTP $HTTP_STATUS). Retrying..."
+        echo "WARNING: API is not yet reachable (HTTP $HTTP_STATUS). Retrying..." 
         sleep 30
     fi
 done
 
 # Move to the directory and run the test script
 cd ./02-docker
-SERVICE_URL="https://$SERVICE_URL"
-echo "NOTE: Testing the Azure Container App Solution."
-echo "NOTE: URL for Azure Container App is $SERVICE_URL/gtg?details=true"
+SERVICE_URL="http://$SERVICE_IP"
+echo "NOTE: Testing the AKS Solution."
+echo "NOTE: URL for AKS Deployent is $SERVICE_URL/gtg?details=true"
 ./test_candidates.py "$SERVICE_URL"
 
 cd ..
