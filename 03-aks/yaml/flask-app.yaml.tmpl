@@ -50,27 +50,6 @@ spec:
 
 ---
 # =============================================================
-# Service: flask-app-service (Exposes Flask app via NodePort)
-# =============================================================
-apiVersion: v1
-kind: Service
-metadata:
-  name: flask-app-service             # Name of the Service resource
-
-spec:
-  selector:
-    app: flask-app                    # Route traffic to Pods with label app=flask-app
-
-  ports:
-    - protocol: TCP                  # Use TCP protocol for HTTP traffic
-      port: 80                       # External port (clients connect here)
-      targetPort: 8000               # Forward traffic to container port 8000
-
-  type: ClusterIP                    # Expose service on a random high port across all cluster nodes
-
----
-
-# =============================================================
 # Service: flask-app-service (Uses Azure Load Balancer)
 # =============================================================
 apiVersion: v1

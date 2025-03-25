@@ -80,7 +80,7 @@ az aks get-credentials --resource-group aks-flaskapp-rg --name flask-aks
 
 az aks update --name flask-aks --resource-group aks-flaskapp-rg --attach-acr $ACR_NAME  > /dev/null
 
-# Add nginx support to K8S cluster via helml
+# Add nginx support to K8S cluster via helm
 
 #helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 #helm repo update
