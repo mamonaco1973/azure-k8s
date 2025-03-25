@@ -90,6 +90,13 @@ az aks update --name flask-aks --resource-group aks-flaskapp-rg --attach-acr $AC
 #  --create-namespace \
 #  --set azureTenantID=$ARM_TENANT_ID
 
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+helm repo update
+
+helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --create-namespace
+
 
 #./validate.sh
 
