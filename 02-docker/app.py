@@ -26,8 +26,7 @@ instance_id = os.popen("hostname -i").read().strip()
 
 @candidates_app.route("/", methods=["GET"])
 def default():
-    """ Default route: Returns a 400 Bad Request for invalid root-level requests """
-    return jsonify({"status": "invalid request"}), 400
+    return Response(json.dumps({}), status=200, mimetype="application/json")
 
 
 @candidates_app.route("/gtg", methods=["GET"])
