@@ -54,3 +54,14 @@ resource "kubernetes_service_account" "cosmosdb_access" {
   }
 }
 
+resource "kubernetes_service_account" "autoscaler" {
+  metadata {
+    name      = "cluster-autoscaler"
+    namespace = "kube-system"
+    annotations = {
+      "azure.workload.identity/client-id" = azurerm_user_assigned_identity.k8s_identity.client_id
+    }
+  }
+}
+
+
