@@ -45,3 +45,13 @@ resource "azurerm_federated_identity_credential" "cosmosdb_sa_binding" {
   subject  = "system:serviceaccount:default:cosmosdb-access-sa"
   audience = ["api://AzureADTokenExchange"]
 }
+
+resource "azurerm_federated_identity_credential" "autoscaler" {
+  name                = "autoscaler-federated"
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name
+  parent_id           = azurerm_user_assigned_identity.k8s_identity.id
+
+  issuer   = azurerm_kubernetes_cluster.flask_aks.oidc_issuer_url
+  subject = "system:serviceaccount:kube-system:cluster-autoscaler"
+  audience = ["api://AzureADTokenExchange"]
+}
