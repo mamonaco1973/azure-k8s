@@ -8,7 +8,10 @@ ACR_NAME=$(az acr list --resource-group $RESOURCE_GROUP --query "[?starts_with(n
 if [ ! -d ".terraform" ]; then
     terraform init
 fi
-terraform destroy -var="acr_name=$ACR_NAME" --auto-approve
+terraform destroy \
+  -var="acr_name=${ACR_NAME}" \
+  -auto-approve
+
 rm -f -r .terraform terraform*
 cd ..
 

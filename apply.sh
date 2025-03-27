@@ -41,9 +41,9 @@ if [ ! -d ".terraform" ]; then
 fi
 
 terraform apply \
-  -var="azure_client_secret='${ARM_CLIENT_SECRET}'" \
-  -var="acr_name='${ACR_NAME}'" \
+  -var="acr_name=${ACR_NAME}" \
   -auto-approve
+
 
 # Replace placeholder in the Kubernetes deployment template
 sed "s/\${ACR_NAME}/$ACR_NAME/g" yaml/flask-app.yaml.tmpl > ../flask-app.yaml || {
