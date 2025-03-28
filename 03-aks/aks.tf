@@ -13,7 +13,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   default_node_pool {
     name       = "default"            # Name of the system node pool
     min_count  = 1                    # Minimum node count for autoscaler
-    max_count  = 2                    # Maximum node count for autoscaler
+    max_count  = 3                    # Maximum node count for autoscaler
     vm_size    = "Standard_D2s_v3"    # VM size used for the nodes
     auto_scaling_enabled = true       # Enables autoscaling for this node pool
 
