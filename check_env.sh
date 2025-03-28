@@ -1,89 +1,108 @@
 #!/bin/bash
 
-echo "NOTE: Validating that required commands are found in your PATH."
-# List of required commands
-commands=("az" "docker" "terraform")
+# ---------------------------------------------------------
+# Validate Required CLI Tools and Environment Variables
+# ---------------------------------------------------------
 
-# Flag to track if all commands are found
-all_found=true
+echo "🔍 Checking required CLI tools in PATH..."
 
-# Iterate through each command and check if it's available
-for cmd in "${commands[@]}"; do
-  if ! command -v "$cmd" &> /dev/null; then
-    echo "ERROR: $cmd is not found in the current PATH."
-    all_found=false
+REQUIRED_COMMANDS=("az" "docker" "terraform")
+MISSING_COMMANDS=false
+
+for cmd in "${REQUIRED_COMMANDS[@]}"; do
+  if ! command -v "$cmd" &>/dev/null; then
+    echo "❌ ERROR: '$cmd' is not found in your PATH."
+    MISSING_COMMANDS=true
   else
-    echo "NOTE: $cmd is found in the current PATH."
+    echo "✅ '$cmd' is available."
   fi
 done
 
-# Final status
-if [ "$all_found" = true ]; then
-  echo "NOTE: All required commands are available."
-else
-  echo "ERROR: One or more commands are missing."
+if [ "$MISSING_COMMANDS" = true ]; then
+  echo "❌ ERROR: One or more required commands are missing. Aborting."
   exit 1
 fi
 
-echo "NOTE: Validating that required environment variables are set."
-# Array of required environment variables
-required_vars=("ARM_CLIENT_ID" "ARM_CLIENT_SECRET" "ARM_SUBSCRIPTION_ID" "ARM_TENANT_ID")
+echo "✅ All required commands are available."
 
-# Flag to check if all variables are set
-all_set=true
+# ---------------------------------------------------------
+# Validate Required Azure Environment Variables
+# ---------------------------------------------------------
 
-# Loop through the required variables and check if they are set
-for var in "${required_vars[@]}"; do
+echo "🔍 Checking required Azure environment variables..."
+
+REQUIRED_VARS=("ARM_CLIENT_ID" "ARM_CLIENT_SECRET" "ARM_SUBSCRIPTION_ID" "ARM_TENANT_ID")
+MISSING_VARS=false
+
+for var in "${REQUIRED_VARS[@]}"; do
   if [ -z "${!var}" ]; then
-    echo "ERROR: $var is not set or is empty."
-    all_set=false
+    echo "❌ ERROR: '$var' is not set or is empty."
+    MISSING_VARS=true
   else
-    echo "NOTE: $var is set."
+    echo "✅ '$var' is set."
   fi
 done
 
-# Final status
-if [ "$all_set" = true ]; then
-  echo "NOTE: All required environment variables are set."
-else
-  echo "ERROR: One or more required environment variables are missing or empty."
+if [ "$MISSING_VARS" = true ]; then
+  echo "❌ ERROR: One or more required environment variables are missing. Aborting."
   exit 1
 fi
 
-echo "NOTE: Logging in to Azure using Service Principal..."
-az login --service-principal --username "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID" > /dev/null 2>&1
+echo "✅ All required environment variables are set."
 
-# Check the return code of the login command
-if [ $? -ne 0 ]; then
-  echo "ERROR: Failed to log into Azure. Please check your credentials and environment variables."
+# ---------------------------------------------------------
+# Log In to Azure via Service Principal
+# ---------------------------------------------------------
+
+echo "🔐 Logging into Azure using service principal credentials..."
+
+if ! az login --service-principal \
+              --username "$ARM_CLIENT_ID" \
+              --password "$ARM_CLIENT_SECRET" \
+              --tenant "$ARM_TENANT_ID" &>/dev/null; then
+  echo "❌ ERROR: Azure login failed. Check your credentials and environment variables."
   exit 1
-else
-  echo "NOTE: Successfully logged into Azure."
 fi
 
-az provider register --namespace Microsoft.App
+echo "✅ Azure login successful."
 
-while [[ "$(az provider show --namespace Microsoft.App --query "registrationState" --output tsv)" != "Registered" ]]; do
-  echo "NOTE: Waiting for Microsoft.App to register..."
+# ---------------------------------------------------------
+# Ensure Microsoft.App Resource Provider is Registered
+# ---------------------------------------------------------
+
+echo "🔄 Registering 'Microsoft.App' resource provider..."
+
+az provider register --namespace Microsoft.App &>/dev/null
+
+# Wait until registration is confirmed
+until [[ "$(az provider show --namespace Microsoft.App --query "registrationState" -o tsv)" == "Registered" ]]; do
+  echo "⏳ Waiting for 'Microsoft.App' to register..."
   sleep 10
 done
-echo "NOTE: Microsoft.App is currently registered!"
 
-# Get the current user or service principal
-ASSIGNEE=$(az account show --query user.name -o tsv)
+echo "✅ 'Microsoft.App' is registered."
+
+# ---------------------------------------------------------
+# Validate Role Assignment
+# ---------------------------------------------------------
+
+echo "🔍 Checking for 'User Access Administrator' role assignment..."
+
+ASSIGNEE=$(az account show --query "user.name" -o tsv)
 
 if [ -z "$ASSIGNEE" ]; then
-    echo "Error: Unable to retrieve the logged-in user or service principal."
-    exit 1
+  echo "❌ ERROR: Failed to retrieve the current user or service principal."
+  exit 1
 fi
 
-# Check for the 'User Access Administrator' role
-ROLE_CHECK=$(az role assignment list --assignee "$ASSIGNEE" --query "[?roleDefinitionName=='User Access Administrator']" -o tsv)
+ROLE_ASSIGNED=$(az role assignment list \
+  --assignee "$ASSIGNEE" \
+  --query "[?roleDefinitionName=='User Access Administrator']" \
+  -o tsv)
 
-if [ -z "$ROLE_CHECK" ]; then
-    echo "ERROR: 'User Access Administrator' role is NOT assigned to current service principal."
-    exit 1
-else
-    echo "NOTE: 'User Access Administrator' role is assigned to current service principal."
+if [ -z "$ROLE_ASSIGNED" ]; then
+  echo "❌ ERROR: 'User Access Administrator' role is NOT assigned to '$ASSIGNEE'."
+  exit 1
 fi
 
+echo "✅ 'User Access Administrator' role is assigned to '$ASSIGNEE'."
