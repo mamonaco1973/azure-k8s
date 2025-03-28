@@ -55,3 +55,11 @@ resource "azurerm_federated_identity_credential" "autoscaler" {
   subject = "system:serviceaccount:kube-system:cluster-autoscaler"
   audience = ["api://AzureADTokenExchange"]
 }
+
+
+#resource "azurerm_role_assignment" "autoscaler_contributor" {
+#  scope                = data.azurerm_resource_group.aks_node_rg.id
+#  role_definition_name = "Contributor"
+#  principal_id         = azurerm_user_assigned_identity.k8s_identity.principal_id
+#}
+

@@ -84,18 +84,10 @@ az aks get-credentials --resource-group aks-flaskapp-rg --name flask-aks
 
 az aks update --name flask-aks --resource-group aks-flaskapp-rg --attach-acr $ACR_NAME  > /dev/null
 
-# Add nginx support to K8S cluster via helm
-
-#helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
-#helm repo update
-
-#helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
-#  --namespace ingress-nginx \
-#  --create-namespace
-
 # Deploy the flask application yaml
 
 kubectl apply -f flask-app.yaml
+kubectl get configmap cluster-autoscaler-status -n kube-system -o yaml
 
 # Validate the Solution
 

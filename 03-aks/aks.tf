@@ -7,7 +7,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   default_node_pool {
     name       = "default"
     min_count  = 1
-    max_count  = 5
+    max_count  = 2
     vm_size    = "Standard_D2s_v3"
     auto_scaling_enabled = true
 
@@ -15,6 +15,11 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
       drain_timeout_in_minutes = 0
       max_surge = "10%"
       node_soak_duration_in_minutes = 0
+   }
+  
+  node_labels = {
+    cluster-autoscaler-enabled = "true"
+    cluster-autoscaler-name    = "flask-aks"
    }
   }
 
@@ -43,6 +48,16 @@ provider "kubernetes" {
   cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].cluster_ca_certificate)
 }
 
+
+provider "helm" {
+  kubernetes {
+    host                   = azurerm_kubernetes_cluster.flask_aks.kube_config[0].host
+    client_certificate     = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_certificate)
+    client_key             = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_key)
+    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].cluster_ca_certificate)
+  }
+}
+
 resource "kubernetes_service_account" "cosmosdb_access" {
   metadata {
     name      = "cosmosdb-access-sa"
@@ -64,4 +79,7 @@ resource "kubernetes_service_account" "autoscaler" {
   }
 }
 
+data "azurerm_resource_group" "aks_node_rg" {
+  name = azurerm_kubernetes_cluster.flask_aks.node_resource_group
+}
 
