@@ -1,49 +1,75 @@
+# ---------------------------------------------------------
+# Virtual Network Definition for AKS Cluster
+# ---------------------------------------------------------
+
 resource "azurerm_virtual_network" "vnet" {
-  name                = "aks-vnet"
-  address_space       = ["10.0.0.0/8"]
-  location            = azurerm_resource_group.aks_flaskapp_rg.location
-  resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name
+  name                = "aks-vnet"                                        # Name of the Virtual Network
+  address_space       = ["10.0.0.0/8"]                                    # Large IP address space for future subnets
+  location            = azurerm_resource_group.aks_flaskapp_rg.location   # Match location with AKS and resource group
+  resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name       # Deploy into shared RG for consistency
+
+  # ✅ This VNet will host AKS system and user node pools, plus other services like Application Gateway or CosmosDB if needed.
 }
 
+# ---------------------------------------------------------
+# Subnet Definition for AKS Nodes
+# ---------------------------------------------------------
+
 resource "azurerm_subnet" "aks_subnet" {
-  name                 = "aks-subnet"
-  resource_group_name  = azurerm_resource_group.aks_flaskapp_rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.240.0.0/16"]
+  name                 = "aks-subnet"                                     # Subnet name within the VNet
+  resource_group_name  = azurerm_resource_group.aks_flaskapp_rg.name      # Same resource group as the VNet
+  virtual_network_name = azurerm_virtual_network.vnet.name                # Associate with the VNet created above
+  address_prefixes     = ["10.240.0.0/16"]                                # IP range reserved for AKS nodes and pods
+
+  # ✅ Used by the default AKS node pool — must be delegated to AKS during cluster creation.
 }
+
+# ---------------------------------------------------------
+# Network Security Group for Flask App Traffic
+# ---------------------------------------------------------
 
 resource "azurerm_network_security_group" "flask_lb_nsg" {
   name                = "flask_lb_nsg"                                   # Name of the NSG
   location            = azurerm_resource_group.aks_flaskapp_rg.location  # Azure region
-  resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name      # Resource group for the NSG
+  resource_group_name = azurerm_resource_group.aks_flaskapp_rg.name      # Same RG as the VNet and subnet
 
+  # Inbound rule to allow standard HTTP traffic (port 80)
   security_rule {
-    name                       = "Allow-HTTP"                         # Rule name: Allow HTTP traffic
-    priority                   = 1002                                 # Rule priority
-    direction                  = "Inbound"                            # Traffic direction
-    access                     = "Allow"                              # Allow or deny rule
-    protocol                   = "Tcp"                                # Protocol type
-    source_port_range          = "*"                                  # Source port range
-    destination_port_range     = "80"                                 # Destination port
-    source_address_prefix      = "*"                                  # Source address range
-    destination_address_prefix = "*"                                  # Destination address range
+    name                       = "Allow-HTTP"                      # Rule name
+    priority                   = 1002                              # Lower number = higher priority
+    direction                  = "Inbound"                         # Only handle incoming traffic
+    access                     = "Allow"                           # Explicitly allow traffic
+    protocol                   = "Tcp"                             # TCP traffic only
+    source_port_range          = "*"                               # Any source port
+    destination_port_range     = "80"                              # Port used by HTTP
+    source_address_prefix      = "*"                               # Allow traffic from anywhere (0.0.0.0/0)
+    destination_address_prefix = "*"                               # Apply to all resources in subnet
   }
 
+  # Inbound rule to allow Flask app traffic on port 8000
   security_rule {
-    name                       = "Allow-Flask-Ingress-8000"
-    priority                   = 1003
+    name                       = "Allow-Flask-Ingress-8000"        # Custom rule for app port
+    priority                   = 1003                              # Slightly lower priority than HTTP rule
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "8000"
-    source_address_prefix      = "*"   # Or lock this to Ingress controller IP/CIDR if needed
+    destination_port_range     = "8000"                            # Port used by the Flask app (typically via LoadBalancer)
+    source_address_prefix      = "*"                               # Open to all (restrict to known ingress IPs in production)
     destination_address_prefix = "*"
   }
 
+  # ✅ These rules ensure external access to both standard web and custom Flask service endpoints.
 }
 
+# ---------------------------------------------------------
+# Associate NSG with AKS Subnet
+# ---------------------------------------------------------
+
 resource "azurerm_subnet_network_security_group_association" "flask-lb-nsg-assoc" {
-  subnet_id                 = azurerm_subnet.aks_subnet.id
-  network_security_group_id = azurerm_network_security_group.flask_lb_nsg.id
+  subnet_id                 = azurerm_subnet.aks_subnet.id                      # Target the AKS subnet
+  network_security_group_id = azurerm_network_security_group.flask_lb_nsg.id   # Attach the NSG to enforce inbound rules
+
+  # ✅ Required to allow traffic through ports 80 and 8000 to reach AKS workloads.
+  # Without this association, the NSG rules won't apply to the subnet.
 }
