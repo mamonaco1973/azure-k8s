@@ -1,36 +1,34 @@
 # =============================================================
 # Deployment: flask-app (Python Web App on Port 8000)
 # =============================================================
-apiVersion: apps/v1                   # API group for managing Deployments
-kind: Deployment                      # Declares a Kubernetes Deployment resource
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: flask-app                     # Name of the Deployment object
+  name: flask-app
 
 spec:
-  replicas: 2                         # Start with 2 replicas (pods) of the Flask app
+  replicas: 2
 
   selector:
     matchLabels:
-      app: flask-app                  # Match Pods with the label app=flask-app
+      app: flask-app
 
   template:
     metadata:
       labels:
-        app: flask-app                # Label applied to each Pod for selection by Service and HPA
-        azure.workload.identity/use: "true"  # ✅ Required for pod mutation
+        app: flask-app
+        azure.workload.identity/use: "true"
     spec:
-      serviceAccountName: cosmosdb-access-sa  # Use a specific service account for access to cosmosdb-sa       
+      serviceAccountName: cosmosdb-access-sa
       containers:
-        - name: flask-app                       # Container name within the Pod
-           
-          image:  ${ACR_NAME}.azurecr.io/flask-app:flask-app-rc1 
-                                                # Pull the image from Amazon ECR using a release candidate tag
+        - name: flask-app
+          image: ${ACR_NAME}.azurecr.io/flask-app:flask-app-rc1
+          imagePullPolicy: IfNotPresent
 
           ports:
-            - containerPort: 8000               # Expose port 8000 (Flask app default)
+            - containerPort: 8000
 
           env:
-
             - name: COSMOS_ENDPOINT
               value: "${COSMOS_ENDPOINT}"
 
@@ -42,11 +40,11 @@ spec:
 
           livenessProbe:
             httpGet:
-              path: /gtg                        # Health check endpoint (same as ALB health check)
-              port: 8000                        # Target port inside container
-            initialDelaySeconds: 10             # Delay before the first check after startup
-            periodSeconds: 30                   # Frequency of health checks
-            failureThreshold: 6                 # Pod is considered unhealthy after 6 consecutive failures
+              path: /gtg
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 6
             timeoutSeconds: 10
 
           readinessProbe:
@@ -60,14 +58,12 @@ spec:
 
 ---
 # =============================================================
-# Service: flask-app-service (Uses Azure Load Balancer)
+# Service: flask-app-service (Internal for Ingress)
 # =============================================================
 apiVersion: v1
 kind: Service
 metadata:
   name: flask-app-service
-  annotations:
-    service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /gtg
 
 spec:
   selector:
@@ -75,10 +71,10 @@ spec:
 
   ports:
     - protocol: TCP
-      port: 80           # External port exposed via Load Balancer
-      targetPort: 8000   # Internal container port
+      port: 80
+      targetPort: 8000
 
-  type: LoadBalancer     # 👉 This creates a native Azure Load Balancer + public IP
+  type: ClusterIP
 
 ---
 # =============================================================
@@ -87,21 +83,43 @@ spec:
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: flask-app-hpa                # Name of the HPA resource
+  name: flask-app-hpa
 
 spec:
   scaleTargetRef:
-    apiVersion: apps/v1             # Target the Deployment API group
-    kind: Deployment                # Type of resource to scale
-    name: flask-app                 # Target the "flask-app" Deployment for scaling
+    apiVersion: apps/v1
+    kind: Deployment
+    name: flask-app
 
-  minReplicas: 2                    # Minimum number of pods to maintain
-  maxReplicas: 5                    # Maximum number of pods that can be created based on load
+  minReplicas: 2
+  maxReplicas: 5
 
   metrics:
     - type: Resource
       resource:
         name: cpu
         target:
-          type: Utilization         # Target CPU utilization metric
-          averageUtilization: 60    # Target average CPU usage at 60% before scaling up
+          type: Utilization
+          averageUtilization: 60
+
+---
+# =============================================================
+# Ingress: flask-app-ingress (Routes traffic via NGINX)
+# =============================================================
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: flask-app-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: flask-app-service
+                port:
+                  number: 80

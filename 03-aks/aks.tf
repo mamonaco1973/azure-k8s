@@ -122,3 +122,18 @@ data "azurerm_resource_group" "aks_node_rg" {
   name = azurerm_kubernetes_cluster.flask_aks.node_resource_group
   # Dynamically resolves the special RG Azure creates for AKS agent resources (e.g., VMSS, NSGs, disks)
 }
+
+
+resource "helm_release" "nginx_ingress" {
+  name       = "nginx-ingress"
+  namespace  = "ingress-nginx"
+  repository = "https://kubernetes.github.io/ingress-nginx"
+  chart      = "ingress-nginx"
+
+  create_namespace = true
+
+  set {
+    name  = "controller.publishService.enabled"
+    value = "true"
+  }
+}
