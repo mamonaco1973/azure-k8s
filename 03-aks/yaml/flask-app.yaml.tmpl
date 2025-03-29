@@ -44,10 +44,19 @@ spec:
             httpGet:
               path: /gtg                        # Health check endpoint (same as ALB health check)
               port: 8000                        # Target port inside container
-            initialDelaySeconds: 60             # Delay before the first check after startup
+            initialDelaySeconds: 10             # Delay before the first check after startup
             periodSeconds: 30                   # Frequency of health checks
             failureThreshold: 6                 # Pod is considered unhealthy after 6 consecutive failures
             timeoutSeconds: 10
+
+          readinessProbe:
+            httpGet:
+              path: /gtg
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 3
+            timeoutSeconds: 5
 
 ---
 # =============================================================
@@ -57,6 +66,8 @@ apiVersion: v1
 kind: Service
 metadata:
   name: flask-app-service
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: /gtg
 
 spec:
   selector:
