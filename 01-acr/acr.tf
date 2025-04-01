@@ -17,7 +17,7 @@ resource "random_string" "acr_suffix" {
 # ---------------------------------------------------------
 
 resource "azurerm_container_registry" "flask_acr" {
-  name = "flaskapp${random_string.acr_suffix.result}"
+  name = "apps${random_string.acr_suffix.result}"
   # 👆 Dynamically generates a unique ACR name like 'flaskappx8s7kp2a'
   # Avoids naming collisions across Azure subscriptions and tenants
 

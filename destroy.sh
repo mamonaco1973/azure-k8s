@@ -7,11 +7,11 @@ echo "NOTE: Destroying AKS cluster."
 
 RESOURCE_GROUP="aks-flaskapp-rg"
 
-# Dynamically look up the ACR name that starts with 'flaskapp'
+# Dynamically look up the ACR name that starts with 'apps'
 # Required because `acr_name` is a Terraform input variable used during apply/destroy
 ACR_NAME=$(az acr list \
   --resource-group $RESOURCE_GROUP \
-  --query "[?starts_with(name, 'flaskapp')].name | [0]" \
+  --query "[?starts_with(name, 'apps')].name | [0]" \
   --output tsv)
 
 # Initialize Terraform backend if not already initialized

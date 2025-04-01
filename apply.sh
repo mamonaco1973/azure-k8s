@@ -38,10 +38,10 @@ echo "NOTE: Building flask container with Docker."
 
 RESOURCE_GROUP="aks-flaskapp-rg"
 
-# Dynamically find the ACR name that starts with 'flaskapp'
+# Dynamically find the ACR name that starts with 'apps'
 ACR_NAME=$(az acr list \
   --resource-group $RESOURCE_GROUP \
-  --query "[?starts_with(name, 'flaskapp')].name | [0]" \
+  --query "[?starts_with(name, 'apps')].name | [0]" \
   --output tsv)
 
 # Authenticate Docker to the ACR
@@ -51,9 +51,37 @@ az acr login --name $ACR_NAME
 ACR_REPOSITORY="${ACR_NAME}.azurecr.io/flask-app"
 IMAGE_TAG="flask-app-rc1"
 
+cd flask-app
 # Build and push Docker image to ACR
 docker build -t ${ACR_REPOSITORY}:${IMAGE_TAG} . --push
+cd ..
 
+# Set full image path with tag
+ACR_REPOSITORY="${ACR_NAME}.azurecr.io/games"
+IMAGE_TAG="tetris-rc1"
+
+cd tetris
+# Build and push Docker image to ACR
+docker build -t ${ACR_REPOSITORY}:${IMAGE_TAG} . --push
+cd ..
+
+# Set full image path with tag
+ACR_REPOSITORY="${ACR_NAME}.azurecr.io/games"
+IMAGE_TAG="frogger-rc1"
+
+cd frogger
+# Build and push Docker image to ACR
+docker build -t ${ACR_REPOSITORY}:${IMAGE_TAG} . --push
+cd ..
+
+# Set full image path with tag
+ACR_REPOSITORY="${ACR_NAME}.azurecr.io/games"
+IMAGE_TAG="breakout-rc1"
+
+cd breakout
+# Build and push Docker image to ACR
+docker build -t ${ACR_REPOSITORY}:${IMAGE_TAG} . --push
+cd ..
 cd ..                          # Return to project root
 
 # ---------------------------------------------
