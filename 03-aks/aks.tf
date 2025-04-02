@@ -39,7 +39,6 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   network_profile {
     network_plugin    = "azure"       # Use Azure CNI (supports VNet integration, custom IPs per pod)
     load_balancer_sku = "standard"    # Use Standard Load Balancer for higher availability and features
-    outbound_type     = "userDefinedRouting"  # ✅ This activates NAT Gateway use
   }
 
   # -------------------------------------------------------
@@ -54,13 +53,6 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   identity {
     type         = "UserAssigned"     # Use user-managed identity (preferred for reuse and least privilege)
     identity_ids = [azurerm_user_assigned_identity.k8s_identity.id]  # Reference to the managed identity to use
-  }
-
-  # -------------------------------------------------------
-  # Metadata Tags
-  # -------------------------------------------------------
-  tags = {
-    environment = "dev"               # Environment tag for organization, cost management, etc.
   }
 }
 
