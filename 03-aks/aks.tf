@@ -132,8 +132,5 @@ resource "helm_release" "nginx_ingress" {
 
   create_namespace = true
 
-  set {
-    name  = "controller.publishService.enabled"
-    value = "true"
-  }
+  values = [file("${path.module}/yaml/nginx-values.yaml")]
 }

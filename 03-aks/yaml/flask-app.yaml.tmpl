@@ -104,19 +104,28 @@ spec:
 
 ---
 # =============================================================
-# Ingress: flask-app-ingress (Routes traffic via NGINX)
+# Ingress: flask-app-ingress (Final AKS Working Version)
 # =============================================================
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: flask-app-ingress
   annotations:
-    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
+  ingressClassName: nginx
   rules:
     - http:
         paths:
-          - path: /
+          - path: /flask-app/api/(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: flask-app-service
+                port:
+                  number: 80
+          - path: /        # Azure specific - something needs to respond at "/"
             pathType: Prefix
             backend:
               service:

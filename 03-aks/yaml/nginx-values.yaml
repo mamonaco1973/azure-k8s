@@ -1,0 +1,12 @@
+controller:
+  publishService:
+    enabled: true
+
+  config:
+    use-regex: "true"
+    enable-rewrite-log: "true"
+
+  ingressClassResource:
+    default: true
+
+  watchIngressWithoutClass: true
