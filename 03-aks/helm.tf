@@ -26,7 +26,7 @@ resource "helm_release" "nginx_ingress" {
   values = [
     templatefile("${path.module}/yaml/nginx-values.yaml.tmpl", {
       ip_address     = azurerm_public_ip.nginx_ingress_ip.ip_address
-      resource_group = azurerm_resource_group.aks_flaskapp_rg.name
+      resource_group = data.azurerm_resource_group.aks_flaskapp_rg.name 
     })
   ]
 }
