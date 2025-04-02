@@ -29,6 +29,10 @@ resource "helm_release" "nginx_ingress" {
       resource_group = data.azurerm_resource_group.aks_flaskapp_rg.name 
     })
   ]
+
+  depends_on = [ azurerm_kubernetes_cluster_node_pool,
+                 azurerm_public_ip.nginx_ingress_ip,
+                 azurerm_kubernetes_cluster.flask_aks ]
 }
 
 # ---------------------------------------------------------

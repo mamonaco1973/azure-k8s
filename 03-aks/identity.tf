@@ -11,6 +11,12 @@ resource "azurerm_user_assigned_identity" "k8s_identity" {
   resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name         # Identity lives in the same RG as AKS
 }
 
+resource "azurerm_role_assignment" "k8s_identity_network_contributor" {
+  scope                = data.azurerm_resource_group.aks_flaskapp_rg.id
+  role_definition_name = "Network Contributor"
+  principal_id         = azurerm_user_assigned_identity.k8s_identity.principal_id
+}
+
 # ---------------------------------------------------------
 # Role Assignment: Allow Pulling Images from ACR
 # ---------------------------------------------------------
