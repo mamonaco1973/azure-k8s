@@ -73,19 +73,6 @@ provider "kubernetes" {
 }
 
 # ---------------------------------------------------------
-# Helm Provider Configuration (for Helm Chart Installs)
-# ---------------------------------------------------------
-provider "helm" {
-  # Uses the same kubeconfig as the Kubernetes provider
-  kubernetes {
-    host                   = azurerm_kubernetes_cluster.flask_aks.kube_config[0].host
-    client_certificate     = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_certificate)
-    client_key             = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].client_key)
-    cluster_ca_certificate = base64decode(azurerm_kubernetes_cluster.flask_aks.kube_config[0].cluster_ca_certificate)
-  }
-}
-
-# ---------------------------------------------------------
 # Service Account for CosmosDB Access (Workload Identity)
 # ---------------------------------------------------------
 resource "kubernetes_service_account" "cosmosdb_access" {
@@ -123,14 +110,25 @@ data "azurerm_resource_group" "aks_node_rg" {
   # Dynamically resolves the special RG Azure creates for AKS agent resources (e.g., VMSS, NSGs, disks)
 }
 
+# ---------------------------------------------------------
+# User Node Pool for Game Workloads (No Autoscaling)
+#----------------------------------------------------------
 
-resource "helm_release" "nginx_ingress" {
-  name       = "nginx-ingress"
-  namespace  = "ingress-nginx"
-  repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx"
+resource "azurerm_kubernetes_cluster_node_pool" "game_nodes" {
+ name                  = "gamenodes"                                       # Unique name for this node pool (1–12 lowercase characters)
+ kubernetes_cluster_id = azurerm_kubernetes_cluster.flask_aks.id           # Reference the parent AKS cluster
+ vm_size               = "Standard_D2s_v3"                                 # VM size for game workload capacity
+ node_count            = 1                                                 # Fixed node count (no autoscaling)
+ auto_scaling_enabled  = false                                             # Autoscaling is disabled
+ mode                  = "User"                                            # Mark as a user node pool (not system-critical)
 
-  create_namespace = true
+ orchestrator_version  = azurerm_kubernetes_cluster.flask_aks.kubernetes_version  # Match the cluster's Kubernetes version
 
-  values = [file("${path.module}/yaml/nginx-values.yaml")]
+ # Node labels to support targeted scheduling (e.g., nodeSelector)
+ node_labels = {
+   nodegroup                   = "game-nodes"        # Label used in pod specs to target this pool
+   cluster-autoscaler-enabled  = "false"             # Marked false to indicate autoscaler should skip this pool
+   cluster-autoscaler-name     = "flask-aks"         # Optional reference label (useful for autoscaler visibility)
+ }
 }
+
