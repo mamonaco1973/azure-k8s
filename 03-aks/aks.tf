@@ -17,6 +17,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
     vm_size    = "Standard_D2s_v3"    # VM size used for the nodes
     auto_scaling_enabled = true       # Enables autoscaling for this node pool
     node_public_ip_enabled = false
+    vnet_subnet_id = data.azurerm_subnet.aks_subnet.id 
     
     # Upgrade strategy for safer and faster rolling upgrades
     upgrade_settings {
@@ -38,6 +39,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   network_profile {
     network_plugin    = "azure"       # Use Azure CNI (supports VNet integration, custom IPs per pod)
     load_balancer_sku = "standard"    # Use Standard Load Balancer for higher availability and features
+# outbound_type     = "userDefinedRouting"  # ✅ This activates NAT Gateway use
   }
 
   # -------------------------------------------------------
@@ -123,6 +125,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "game_nodes" {
  auto_scaling_enabled  = false                                             # Autoscaling is disabled
  mode                  = "User"                                            # Mark as a user node pool (not system-critical)
  node_public_ip_enabled = false
+ vnet_subnet_id         = data.azurerm_subnet.aks_subnet.id
 
  orchestrator_version  = azurerm_kubernetes_cluster.flask_aks.kubernetes_version  # Match the cluster's Kubernetes version
 
