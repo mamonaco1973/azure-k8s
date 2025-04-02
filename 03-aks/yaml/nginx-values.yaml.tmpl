@@ -10,3 +10,8 @@ controller:
     default: true
 
   watchIngressWithoutClass: true
+
+  service:
+    loadBalancerIP: "${ip_address}"  # Injected from Terraform
+    annotations:
+      service.beta.kubernetes.io/azure-load-balancer-resource-group: "${resource_group}"

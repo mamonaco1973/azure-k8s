@@ -23,6 +23,29 @@ resource "helm_release" "nginx_ingress" {
   create_namespace = true
   # Automatically creates the target namespace if it doesn't exist
 
-  values = [file("${path.module}/yaml/nginx-values.yaml")]
-  # Loads custom Helm chart values from the specified YAML file
+  values = [
+    templatefile("${path.module}/yaml/nginx-values.yaml.tmpl", {
+      ip_address     = azurerm_public_ip.nginx_ingress_ip.ip_address
+      resource_group = azurerm_resource_group.aks_flaskapp_rg.name
+    })
+  ]
+}
+
+# ---------------------------------------------------------
+# Random Suffix Generator for Globally Unique ACR Name
+# ---------------------------------------------------------
+
+resource "random_string" "ip_suffix" {
+  length  = 6         # Generates an 6-character string
+  special = false     # Excludes special characters (e.g., !@#)
+  upper   = false     # Lowercase only t
+}
+
+resource "azurerm_public_ip" "nginx_ingress_ip" {
+  name                = "nginx-ingress-ip"
+  location            = data.azurerm_resource_group.aks_flaskapp_rg.location  # Use the same region as the target resource group
+  resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name      # Reference the existing resource group
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  domain_name_label   = "k8s${random_string.ip_suffix.result}"  
 }
