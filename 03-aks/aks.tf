@@ -6,7 +6,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   location            = data.azurerm_resource_group.aks_flaskapp_rg.location  # Use the same region as the target resource group
   resource_group_name = data.azurerm_resource_group.aks_flaskapp_rg.name      # Reference the existing resource group
   dns_prefix          = "flaskkube"  # Used to create the public FQDN for the AKS API server
-
+  
   # -------------------------------------------------------
   # Default Node Pool Configuration
   # -------------------------------------------------------
@@ -16,7 +16,8 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
     max_count  = 3                    # Maximum node count for autoscaler
     vm_size    = "Standard_D2s_v3"    # VM size used for the nodes
     auto_scaling_enabled = true       # Enables autoscaling for this node pool
-
+    node_public_ip_enabled = false
+    
     # Upgrade strategy for safer and faster rolling upgrades
     upgrade_settings {
       drain_timeout_in_minutes        = 0     # Graceful pod drain wait time is zero (aggressive drain)
@@ -121,6 +122,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "game_nodes" {
  node_count            = 1                                                 # Fixed node count (no autoscaling)
  auto_scaling_enabled  = false                                             # Autoscaling is disabled
  mode                  = "User"                                            # Mark as a user node pool (not system-critical)
+ node_public_ip_enabled = false
 
  orchestrator_version  = azurerm_kubernetes_cluster.flask_aks.kubernetes_version  # Match the cluster's Kubernetes version
 
