@@ -39,7 +39,7 @@ resource "azurerm_kubernetes_cluster" "flask_aks" {
   network_profile {
     network_plugin    = "azure"       # Use Azure CNI (supports VNet integration, custom IPs per pod)
     load_balancer_sku = "standard"    # Use Standard Load Balancer for higher availability and features
-# outbound_type     = "userDefinedRouting"  # ✅ This activates NAT Gateway use
+    outbound_type     = "userDefinedRouting"  # ✅ This activates NAT Gateway use
   }
 
   # -------------------------------------------------------
