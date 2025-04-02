@@ -110,6 +110,12 @@ sed "s/\${ACR_NAME}/$ACR_NAME/g" yaml/flask-app.yaml.tmpl > ../flask-app.yaml ||
     exit 1
 }
 
+# Replace ${ACR_NAME} in the deployment template
+sed "s/\${ACR_NAME}/$ACR_NAME/g" yaml/games.yaml.tmpl > ../games.yaml || {
+    echo "ERROR: Failed to generate Kubernetes deployment file. Exiting."
+    exit 1
+}
+
 # ---------------------------------------------
 # STEP 5: Lookup CosmosDB endpoint dynamically
 # ---------------------------------------------
@@ -159,6 +165,8 @@ az aks update \
 # ---------------------------------------------
 
 kubectl apply -f flask-app.yaml
+kubectl apply -f games.yaml
+
 kubectl get configmap cluster-autoscaler-status -n kube-system -o yaml
 # (Optional check that autoscaler is properly configured)
 

@@ -1,6 +1,10 @@
 # ---------------------------------------------------------
 # STEP 1: Destroy AKS Cluster and Related Resources
 # ---------------------------------------------------------
+
+kubectl delete -f flask-app.yaml
+kubectl delete -f games.yaml
+
 cd "03-aks"  # Navigate to the AKS Terraform module directory
 
 echo "NOTE: Destroying AKS cluster."
