@@ -30,7 +30,7 @@ resource "helm_release" "nginx_ingress" {
     })
   ]
 
-  depends_on = [ azurerm_kubernetes_cluster_node_pool,
+  depends_on = [ azurerm_kubernetes_cluster_node_pool.game_nodes,
                  azurerm_public_ip.nginx_ingress_ip,
                  azurerm_kubernetes_cluster.flask_aks ]
 }
