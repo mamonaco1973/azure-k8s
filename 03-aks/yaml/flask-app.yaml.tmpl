@@ -125,10 +125,3 @@ spec:
                 name: flask-app-service
                 port:
                   number: 80
-          - path: /        # Azure specific - something needs to respond at "/"
-            pathType: Prefix
-            backend:
-              service:
-                name: flask-app-service
-                port:
-                  number: 80
