@@ -31,7 +31,7 @@ spec:
         nodegroup: game-nodes
       containers:
         - name: tetris  # Container name (visible in logs/dashboard)
-          image: apps65eawakg.azurecr.io/games:tetris-rc1  # ECR image location
+          image: appsg50eiuz9.azurecr.io/games:tetris-rc1  # ECR image location
           ports:
             - containerPort: 8000  # The port the game server listens on
 
@@ -110,7 +110,7 @@ spec:
         nodegroup: game-nodes
       containers:
         - name: frogger  # Container name (visible in logs/dashboard)
-          image: apps65eawakg.azurecr.io/games:frogger-rc1  # ECR image location
+          image: appsg50eiuz9.azurecr.io/games:frogger-rc1  # ECR image location
           ports:
             - containerPort: 8000  # The port the game server listens on
 
@@ -189,7 +189,7 @@ spec:
         nodegroup: game-nodes
       containers:
         - name: breakout  # Container name (visible in logs/dashboard)
-          image: apps65eawakg.azurecr.io/games:breakout-rc1  # ECR image location
+          image: appsg50eiuz9.azurecr.io/games:breakout-rc1  # ECR image location
           ports:
             - containerPort: 8000  # The port the game server listens on
 

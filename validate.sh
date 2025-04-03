@@ -50,9 +50,20 @@ done
 # STEP 3: Run End-to-End Test Script Against the Flask API
 # ---------------------------------------------------------
 
+DNS_NAME=$(az network public-ip show \
+  --name nginx-ingress-ip \
+  --resource-group aks-flaskapp-rg \
+  --query "dnsSettings.fqdn" \
+  --output tsv)
+
+if [ -z "$DNS_NAME" ]; then
+  echo "ERROR: Failed to retrieve DNS label from public IP."
+  exit 1
+fi
+
 cd ./02-docker
 
-SERVICE_URL="http://$INGRESS_IP/flask-app/api"
+SERVICE_URL="http://$DNS_NAME/flask-app/api"
 
 echo "NOTE: Testing the AKS Solution."
 echo "NOTE: URL for AKS Deployment is $SERVICE_URL/gtg?details=true"
