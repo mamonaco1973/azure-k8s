@@ -47,18 +47,6 @@ With **AKS**, you never provision or manage the Kubernetes control plane yoursel
 You define the node pool configuration, and Azure provisions the required compute using **Virtual Machine Scale Sets (VMSS)** — all via a **declarative, cloud-native interface** that aligns with the PaaS model.
 
 ---
-
-### Load Balancer Integration
-
-AKS integrates natively with **Azure Load Balancer** and **Azure Application Gateway**. When you expose a Kubernetes `Service` of type `LoadBalancer`, Azure automatically provisions:
-
-- A **Standard Load Balancer**, by default  
-- Or an **Application Gateway Ingress Controller (AGIC)**, if configured with annotations  
-
-You don’t have to manually configure backend pools or health probes — the **cloud controller manager** and **ingress controllers** manage that, allowing you to simply define your service and let the infrastructure materialize.
-
----
-
 ### Autoscaling and Node Management: IaaS Beneath the Surface
 
 Even though you don’t directly manage VMs, AKS uses **Virtual Machine Scale Sets** under the hood to scale and maintain worker nodes. You define:
@@ -74,6 +62,16 @@ Azure then automates:
 - Integration with **Cluster Autoscaler** and **KEDA** for event-driven scaling  
 
 It’s classic IaaS power, abstracted by Kubernetes orchestration and Azure automation.
+
+---
+### Load Balancer Integration
+
+AKS integrates natively with **Azure Load Balancer** and **Azure Application Gateway**. When you expose a Kubernetes `Service` of type `LoadBalancer`, Azure automatically provisions:
+
+- A **Standard Load Balancer**, by default  
+- Or an **Application Gateway Ingress Controller (AGIC)**, if configured with annotations  
+
+You don’t have to manually configure backend pools or health probes — the **cloud controller manager** and **ingress controllers** manage that, allowing you to simply define your service and let the infrastructure materialize.
 
 ---
 
