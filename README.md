@@ -75,7 +75,8 @@ by Steven Lambert, served by NGINX.
 * [Install Terraform](https://developer.hashicorp.com/terraform/install)
 * [Install Docker](https://docs.docker.com/engine/install/) with `buildx`
 * [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
-* The `Microsoft.App` resource provider registered on the subscription
+* Rights to register resource providers (`check_env.sh` registers
+  `Microsoft.App`)
 
 `check_env.sh` expects a service principal in `ARM_CLIENT_ID`,
 `ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID` and `ARM_TENANT_ID`. It needs the
