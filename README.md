@@ -1,341 +1,168 @@
-## Containerizing Applications with Azure Kubernetes Service (AKS)
+# Kubernetes on Azure: AKS with NGINX Ingress, ACR and Cosmos DB
 
-Welcome to **Video 2** of the [Kubernetes In the Cloud](https://github.com/mamonaco1973/cloud-k8s-intro/blob/main/README.md) series.
+Video 2 of the [Kubernetes in the Cloud](https://github.com/mamonaco1973/cloud-k8s-intro/blob/main/README.md)
+series. The candidate microservice from
+[Azure VM Scale Sets](https://github.com/mamonaco1973/azure-flask-vmss) and
+[Simple Azure Containers](https://github.com/mamonaco1973/azure-flask-container)
+runs here on **Azure Kubernetes Service**, next to three browser games
+(Tetris, Frogger and Breakout). Images live in **Azure Container Registry**,
+the Flask pods store candidates in **Cosmos DB** through workload identity,
+and an **NGINX ingress controller** on one static public IP routes to
+everything. Terraform builds the infrastructure and the ingress controller;
+`kubectl` deploys the apps.
 
-**This video complements the [Azure VM Scale Sets](https://github.com/mamonaco1973/azure-flask-vmss/blob/main/README.md) and the [Simple Azure Containers](https://github.com/mamonaco1973/azure-flask-container/blob/main/README.md) projects**, where we deployed a simple Python-based microservice using the Flask framework with different cloud services.
+![Tour of the build in the Azure portal](diagrams/consoles.gif)
 
-This is a **fully automated deployment** of containerized microservices and web apps with **Azure Kubernetes Service (AKS)** — powered by Terraform and shell scripting.
+| Piece | Where | Role |
+|---|---|---|
+| **aks-vnet** | `10.0.0.0/8`, `aks-flaskapp-rg`, Central US | subnet `aks-subnet` (`10.240.0.0/16`) for nodes and pods (Azure CNI); NAT gateway for outbound traffic; an NSG allowing 80 and 8000 from anywhere |
+| **flask-aks** | AKS | managed control plane, Standard load balancer, OIDC issuer and workload identity on; runs as the user-assigned identity `k8s-identity` |
+| **default** pool | AKS | `Standard_D2s_v3`, 1 to 3 nodes with the cluster autoscaler; runs `flask-app` |
+| **gamenodes** pool | AKS | `Standard_D2s_v3`, 1 node; runs the games in the `games` namespace |
+| **nginx-ingress** | Helm, `ingress-nginx` | NGINX ingress controller on the static public IP `nginx-ingress-ip`; load balancer health probe on `/flask-app/api/gtg` |
+| **flask-app** | Deployment | 2 replicas, scaled 2 to 5 by an HPA at 60% CPU; `/gtg` probes; service account `cosmosdb-access-sa` |
+| **tetris**, **frogger**, **breakout** | Deployments, `games` | one replica each |
+| **candidates-&lt;suffix&gt;** | Cosmos DB, serverless | `CandidateDatabase` / `Candidates`; a custom data role for `k8s-identity` |
+| **apps&lt;suffix&gt;** | ACR, Basic | `flask-app` and `games` images, tagged `*-rc1` |
 
-We'll build and deploy:
+`k8s-identity` has Network Contributor (for the load balancer and IP),
+AcrPull on the registry, and the Cosmos DB data role; a federated credential
+lets `cosmosdb-access-sa` sign in as it.
 
-- **A document database-backed microservice** using:  
-  - **Azure Cosmos DB (SQL API)** for fast, globally distributed NoSQL storage.
+## Architecture
 
-- **A Docker container** for the Flask microservice, optimized for deployment to **Azure AKS**.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
+  <img alt="Requests from the internet reach the static public IP nginx-ingress-ip on the cluster's Standard load balancer, which forwards to the NGINX ingress controller in the flask-aks AKS cluster in Central US. The ingress routes /flask-app/api to two to five Flask pods on the default node pool (Standard_D2s_v3, one to three nodes, autoscaled) and /games paths to the Tetris, Frogger and Breakout pods on the single-node gamenodes pool. The Flask pods use the cosmosdb-access-sa service account, federated to the k8s-identity user-assigned identity, to read and write a serverless Cosmos DB account. That identity also runs the cluster, with Network Contributor and AcrPull, and both pools pull images from the container registry." src="architecture-light.svg">
+</picture>
 
-- **Additional standalone Docker containers** that run classic JavaScript games like **[Tetris](https://gist.github.com/straker/3c98304f8a6a9174efd8292800891ea1)**, **[Frogger](https://gist.github.com/straker/82a4368849cbd441b05bd6a044f2b2d3)**, and **[Breakout](https://gist.github.com/straker/98a2aed6a7686d26c04810f08bfaf66b)**.
+Regenerate with `python3 make_diagram.py`.
 
-- **Cloud-native container registry workflows**, pushing all images to:  
-  - **Azure Container Registry (ACR)**.
+- **`01-acr/`**: the resource group, the registry, and the network (VNet,
+  subnet, NSG, NAT gateway).
+- **`02-docker/`**: the Flask app and the three games, each with its
+  `Dockerfile`, plus the `test_candidates.py` smoke test.
+- **`03-aks/`**: the identity and its roles, the cluster and both pools, the
+  two service accounts, Cosmos DB, the ingress IP and Helm release, and the
+  manifest templates in `yaml/`.
+- **`stress.yaml`**: a CPU load generator for the autoscaling test.
 
-- **Kubernetes workloads on Azure AKS**, managing containerized applications at scale.
+## Endpoints
 
-- **Kubernetes manifests** including **Deployments**, **Services**, and **Ingress** resources for scalable, fault-tolerant workloads.
+| Path | Returns |
+|---|---|
+| `GET /flask-app/api/gtg` | 200; with `?details=true`, connection details |
+| `GET /flask-app/api/<name>` | the candidate, or 404 |
+| `POST /flask-app/api/<name>` | `{"CandidateName": <name>}`, or 500 |
+| `GET /flask-app/api/candidates` | every candidate, or 404 |
+| `GET /games/tetris` | Tetris |
+| `GET /games/frogger` | Frogger |
+| `GET /games/breakout` | Breakout |
 
-- **NGINX as a unified Ingress controller**, exposing all services and games behind a single **Azure Load Balancer**.
+The games are [Tetris](https://gist.github.com/straker/3c98304f8a6a9174efd8292800891ea1),
+[Frogger](https://gist.github.com/straker/82a4368849cbd441b05bd6a044f2b2d3)
+and [Breakout](https://gist.github.com/straker/98a2aed6a7686d26c04810f08bfaf66b)
+by Steven Lambert, served by NGINX.
 
-## Is Azure AKS PaaS or IaaS?
-
-When deploying Kubernetes with **Azure Kubernetes Service (AKS)**, it’s natural to ask:
-
-> Is AKS considered Infrastructure as a Service (IaaS) or Platform as a Service (PaaS)?
-
-AKS allows you to configure compute resources and scaling parameters — very IaaS-like. But it also fully manages the Kubernetes control plane, handles upgrades, and reduces operational burden — leaning toward PaaS.
-
-The best answer: **AKS offers a PaaS-like experience built on top of IaaS**. It provides declarative infrastructure management layered with Azure-native automation.
-
----
-
-### Managed Control Plane, Declarative Infrastructure
-
-With **AKS**, you never provision or manage the Kubernetes control plane yourself. Azure handles all of it — including:
-
-- High availability and scaling of control plane components  
-- Kubernetes version upgrades and security patches  
-- Integration with Azure Monitor and Azure Policy  
-
-You define the node pool configuration, and Azure provisions the required compute using **Virtual Machine Scale Sets (VMSS)** — all via a **declarative, cloud-native interface** that aligns with the PaaS model.
-
----
-### Autoscaling and Node Management: IaaS Beneath the Surface
-
-Even though you don’t directly manage VMs, AKS uses **Virtual Machine Scale Sets** under the hood to scale and maintain worker nodes. You define:
-
-- Node pool VM size and OS  
-- Min/max node counts and autoscaling rules  
-- Custom node labels and taints  
-
-Azure then automates:
-
-- VM provisioning and zone-aware placement  
-- Node repairs and rolling upgrades  
-- Integration with **Cluster Autoscaler** and **KEDA** for event-driven scaling  
-
-It’s classic IaaS power, abstracted by Kubernetes orchestration and Azure automation.
-
----
-### Load Balancer Integration
-
-AKS integrates natively with **Azure Load Balancer** and **Azure Application Gateway**. When you expose a Kubernetes `Service` of type `LoadBalancer`, Azure automatically provisions:
-
-- A **Standard Load Balancer**, by default  
-- Or an **Application Gateway Ingress Controller (AGIC)**, if configured with annotations  
-
-You don’t have to manually configure backend pools or health probes — the **cloud controller manager** and **ingress controllers** manage that, allowing you to simply define your service and let the infrastructure materialize.
-
----
-
-### Tagging and Resource Management
-
-AKS relies on **Azure resource tagging** and **resource group scoping** to manage cluster components:
-
-- Tags on subnets and NSGs help AKS with networking and IP assignment  
-- Managed identities and role-based access control (RBAC) secure cluster operations  
-- Azure Resource Graph and tagging enable governance and automation  
-
-Most of this is handled behind the scenes — but it’s essential to the seamless, automated behavior of AKS.
-
----
-
-### Conclusion
-
-**Azure AKS delivers a managed Kubernetes experience that merges PaaS convenience with IaaS control**:
-
-- You don’t manage the control plane — Azure does.  
-- You define infrastructure declaratively with Terraform, Bicep, or ARM templates.  
-- Azure provisions and maintains the underlying VMSS-powered compute layer.  
-
-Compared to services like **Azure App Service** or **Azure SQL**, AKS sits in the middle ground — offering more flexibility than pure PaaS, while automating much of the IaaS complexity.
-
-## Azure Solution
-
-The **AKS solution we are building** consists of a fully managed **Azure Kubernetes Service (AKS) cluster** deployed in the `US Central` region.
-
-It includes:
-
-- A fully managed **control plane** operated by Azure.
-
-- Two distinct **node pools**:
-  - **default node pool** for running the Flask-based microservice:
-    - `flask-app-1`
-    - `flask-app-2`
-  - **games node pool** for hosting classic JavaScript games:
-    - `tetris`
-    - `frogger`
-    - `breakout`
-
-Each **pod** runs a containerized application in isolation, with horizontal scalability and independent scheduling across node pools.
-
-![aks](./diagrams/azure-k8s.drawio.png)
-
-This diagram shows the Azure infrastructure behind the AKS cluster, with VM Scale Set–based node pools, a public Load Balancer for internet traffic, and connected services like Cosmos DB and Azure Container Registry.
-
-![aks-infra](./diagrams/azure-k8s-infra.drawio.png)
+| Tetris | Frogger | Breakout |
+|---|---|---|
+| ![Tetris](diagrams/tetris.png) | ![Frogger](diagrams/frogger.png) | ![Breakout](diagrams/breakout.png) |
 
 ## Prerequisites
 
 * [An Azure Account](https://portal.azure.com/)
-* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) 
-* [Install Latest Terraform](https://developer.hashicorp.com/terraform/install)
-* [Install Postman](https://www.postman.com/downloads/) for testing
-* [Install Docker](https://docs.docker.com/engine/install/)
-* [Microsoft.App](https://learn.microsoft.com/en-us/azure/container-apps/) Provider must be enabled
-* `User Access Administrator` role must be assigned to build identity
+* [Install AZ CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli)
+* [Install Terraform](https://developer.hashicorp.com/terraform/install)
+* [Install Docker](https://docs.docker.com/engine/install/) with `buildx`
+* [Install kubectl](https://kubernetes.io/docs/tasks/tools/)
+* The `Microsoft.App` resource provider registered on the subscription
 
-![role](diagrams/azure-user-role.png)
+`check_env.sh` expects a service principal in `ARM_CLIENT_ID`,
+`ARM_CLIENT_SECRET`, `ARM_SUBSCRIPTION_ID` and `ARM_TENANT_ID`. It needs the
+**User Access Administrator** role as well as Contributor, because Terraform
+creates role assignments:
 
-If this is your first time watching our content, we recommend starting with this video: [Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk). It provides a step-by-step guide to properly configure Terraform, Packer, and the AZ CLI.
+![User Access Administrator assigned to the build identity](diagrams/azure-user-role.png)
 
-## Download this Repository
+If this is your first time watching our content, we recommend starting with
+this video: [Azure + Terraform: Easy Setup](https://www.youtube.com/watch?v=wwi3kVgYNOk).
+
+## Deploy
 
 ```bash
 git clone https://github.com/mamonaco1973/azure-k8s.git
 cd azure-k8s
+./apply.sh
 ```
-## Build the Code
 
-Run [check_env](check_env.sh) then run [apply](apply.sh).
+`apply.sh`:
+
+1. Applies **`01-acr`** (registry and network).
+2. Logs Docker in to the registry and builds and pushes the Flask image and
+   the three game images.
+3. Applies **`03-aks`**: the identity, cluster, pools, Cosmos DB and the
+   NGINX ingress.
+4. Gets credentials for `kubectl`, renders `flask-app.yaml` and `games.yaml`
+   with the registry name, and applies them.
+
+It ends by running `validate.sh`, which waits for the ingress to get its IP
+and for `/flask-app/api/gtg` to answer, then runs the smoke test:
+
+```
+NOTE: URL for AKS Deployment is http://<ingress IP>/flask-app/api/gtg?details=true
+✓ good to go passed
+✓ insert passed
+✓ verification passed
+✓ candidate list passed
+```
+
+## Try it
+
+1. Open `http://<ingress IP>/games/tetris` (or `frogger`, `breakout`) in a
+   browser, and call the Flask API with `curl` or Postman.
+2. Check the workloads:
+
+   ```bash
+   kubectl get pods,deployments,ingress
+   kubectl get pods,deployments,ingress -n games
+   kubectl get nodes
+   ```
+
+3. Test autoscaling with the load generator in `stress.yaml`:
+
+   ```bash
+   kubectl apply -f stress.yaml
+   # wait about 5 minutes
+   kubectl get nodes          # the default pool grows, up to 3 nodes
+   kubectl delete -f stress.yaml
+   # wait about 5 minutes
+   kubectl get nodes          # and shrinks back
+   ```
+
+## Teardown
 
 ```bash
-~/azure-k8s$ ./apply.sh
-NOTE: Checking required CLI tools in PATH...
-NOTE: 'az' is available.
-NOTE: 'docker' is available.
-NOTE: 'terraform' is available.
-NOTE: All required commands are available.
-NOTE: Checking required Azure environment variables...
-NOTE: 'ARM_CLIENT_ID' is set.
-NOTE: 'ARM_CLIENT_SECRET' is set.
-NOTE: 'ARM_SUBSCRIPTION_ID' is set.
-NOTE: 'ARM_TENANT_ID' is set.
-NOTE: All required environment variables are set.
-NOTE: Logging into Azure using service principal credentials...
-NOTE: Azure login successful.
-NOTE: Registering 'Microsoft.App' resource provider...
-NOTE: 'Microsoft.App' is registered.
-NOTE: Checking for 'User Access Administrator' role assignment...
-NOTE: 'User Access Administrator' role is assigned to 'ccec196f-9cdf-4884-91f7-eb64d6a12206'.
-NOTE: Building ACR Instance.
-Initializing the backend...
-Initializing provider plugins...
-- Finding latest version of hashicorp/azurerm...
-- Finding latest version of hashicorp/random...
-- Installing hashicorp/azurerm v4.26.0...
-[...]
+./destroy.sh
 ```
 
-### **Build Process Overview**
+## Is AKS PaaS or IaaS?
 
-The build process is organized into four phases:
+Both, in layers. Azure runs the Kubernetes control plane for you, and you
+describe node pools instead of building VMs, which feels like PaaS.
+Underneath, each pool is a VM Scale Set in a separate node resource group,
+the autoscaler changes its size, and a `Service` of type `LoadBalancer`
+becomes rules on an Azure load balancer and a public IP. AKS sits between
+fully managed services such as Cosmos DB and plain VMs: control when you
+want it, automation when you don't.
 
-#### 1. Provision ACR and Virtual Network
-- Creates **Azure Container Registry (ACR)** repositories for storing container images.  
-- Sets up the **Azure Virtual Network (VNet)** and subnets required for the AKS cluster.
+## Notes
 
-#### 2. Build and Push Docker Images
-- Builds Docker images for the **Flask microservice** and three **JavaScript game apps** (`Tetris`, `Frogger`, `Breakout`).  
-- Pushes all images to their respective **ACR repositories**.
-
-#### 3. Provision Azure AKS Cluster
-- Deploys the **Azure Kubernetes Service (AKS)** cluster with two node pools:
-  - `flask-nodes` for the Flask microservice  
-  - `game-nodes` for the game containers  
-
-#### 4. Deploy Applications Using `kubectl`
-- Connects `kubectl` to the newly created AKS cluster.  
-- Applies Kubernetes manifests:
-  - [flask-app.yaml](./03-aks/yaml/flask-app.yaml.tmpl) for the microservice  
-  - [games.yaml](./03-aks/yaml/games.yaml.tmpl) for the game containers
-
-## Tour of Build Output in the Azure Console
-
-![consoles](./diagrams/consoles.gif)
-
-## Service Endpoint Summary
-
-### `/flask-app/api/gtg` (GET)
-- **Purpose**: Health check.
-- **Response**: 
-  - `{"connected": "true", "instance-id": <instance_id>}` (if `details` query parameter is provided).
-  - 200 OK with no body otherwise.
-
-### `/flask-app/api/<name>` (GET)
-- **Purpose**: Retrieve a candidate by name.
-- **Response**: 
-  - Candidate details (JSON) with status `200`.
-  - `"Not Found"` with status `404` if no candidate is found.
-
-### `/flask-app/api/<name>` (POST)
-- **Purpose**: Add or update a candidate by name.
-- **Response**: 
-  - `{"CandidateName": <name>}` with status `200`.
-  - `"Unable to update"` with status `500` on failure.
-
-### `/flask-app/api/candidates` (GET)
-- **Purpose**: Retrieve all candidates.
-- **Response**: 
-  - List of candidates (JSON) with status `200`.
-  - `"Not Found"` with status `404` if no candidates exist.
-
-### `/games/tetris` (GET)
- - **Purpose**: Loads javascript tetris game for usage in a Web Browser.
-
-      ![tetris](./diagrams/tetris.png)
-
-### `/games/frogger` (GET)
- - **Purpose**: Loads javascript frogger game for usage in a Web Browser.
-
-      ![frogger](./diagrams/frogger.png)
-
-### `/games/breakout` (GET)
- - **Purpose**: Loads javascript breakout game for usage in a Web Browser.
-
-      ![breakout](./diagrams/breakout.png)
-
-## Kubernetes Cluster Validation and Autoscaling Test
-
-This guide walks through validating your Kubernetes cluster with `kubectl` and testing autoscaling behavior using a simple stress test.
-
----
-
-### Step 1: Validate Pod Deployments
-
-Start by listing the current pods in the default namespace:
-
-```bash
-kubectl get pods
-```
-
-Then check for any applications deployed in the custom `games` namespace:
-
-```bash
-kubectl get pods -n games
-```
-
----
-
-### Step 2: Check Deployment Health
-
-Verify the `Deployment` resources:
-
-```bash
-kubectl get deployments
-kubectl get deployments -n games
-```
-
----
-
-### Step 3: Confirm Ingress Setup
-
-Check the Ingress resources in both namespaces:
-
-```bash
-kubectl get ingress
-kubectl get ingress -n games
-```
-
----
-
-### Step 4: Check Node Availability
-
-List the current nodes in your cluster:
-
-```bash
-kubectl get nodes
-```
-
----
-
-### Step 5: Simulate Load with a Stress Test
-
-Apply a resource-intensive workload:
-
-```bash
-kubectl apply -f stress.yaml
-```
-
-⏱️ **Wait ~5 minutes** to allow autoscaling to respond.
-
-Then check the nodes again:
-
-```bash
-kubectl get nodes
-```
-
----
-
-### Step 6: Clean Up the Load Generator
-
-Remove the stress workload:
-
-```bash
-kubectl delete -f stress.yaml
-```
-
-⏱️ **Wait ~5 minutes** for the cluster to scale back down.
-
-Check node status again:
-
-```bash
-kubectl get nodes
-```
-
----
-
-### Summary
-
-This process validates:
-
-- Pod and deployment readiness
-- Ingress configuration
-- Node availability and autoscaler behavior
+- **Lab only.** The API and games are open to the internet over plain HTTP,
+  and the NSG also opens port 8000 to everyone.
+- `games.yaml` in the repository root is a rendered copy of the template
+  with a real registry name (`appsg50eiuz9`) from an earlier deploy;
+  `flask-app.yaml` is gitignored but `games.yaml` isn't.
+- The registry has its admin user enabled, though the cluster pulls with
+  AcrPull.
+- `03-aks` also creates a `cluster-autoscaler` service account and federated
+  credential in `kube-system`; AKS's built-in autoscaler doesn't use them.
